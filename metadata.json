@@ -1,0 +1,5 @@
+{
+  "name": "EvA - Autonomous Trading Arena",
+  "description": "A high-fidelity prototype for an AI agent trading arena where users create agents, bet on outcomes, and analyze reasoning chains.",
+  "requestFramePermissions": []
+}
