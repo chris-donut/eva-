@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Triangle, Cpu, Zap, Activity } from 'lucide-react';
+import { Triangle, Cpu, Zap, Activity } from 'lucide-react';
 import { Button } from '../../ui/Button';
 import { AVATARS } from '../../../constants';
 import { Agent } from '../../../types';
@@ -13,6 +13,7 @@ export const CreateAgent: React.FC<CreateAgentProps> = ({ onCreated }) => {
   const [selectedAvatar, setSelectedAvatar] = useState(AVATARS[0].id);
   const [isInitializing, setIsInitializing] = useState(false);
   const [initStep, setInitStep] = useState(0);
+  const [syncRatio, setSyncRatio] = useState(0);
 
   const handleSubmit = () => {
     if (!name) return;
@@ -21,10 +22,33 @@ export const CreateAgent: React.FC<CreateAgentProps> = ({ onCreated }) => {
 
   useEffect(() => {
     if (isInitializing) {
-        const step1 = setTimeout(() => setInitStep(1), 1000); // Neural Link
-        const step2 = setTimeout(() => setInitStep(2), 2500); // Synch Ratio
-        const step3 = setTimeout(() => setInitStep(3), 4000); // Complete
-        const step4 = setTimeout(() => {
+        // Step 1: Neural Link (Immediate)
+        setInitStep(1);
+
+        // Animate Sync Ratio
+        const interval = setInterval(() => {
+            setSyncRatio(prev => {
+                const next = prev + Math.floor(Math.random() * 25) + 10;
+                if (next >= 400) {
+                    clearInterval(interval);
+                    return 400;
+                }
+                return next;
+            });
+        }, 30);
+
+        return () => clearInterval(interval);
+    }
+  }, [isInitializing]);
+
+  // React to Sync Ratio updates
+  useEffect(() => {
+      if (syncRatio > 0 && initStep < 2) setInitStep(2); // Start Sync visual
+      
+      if (syncRatio >= 400) {
+          // Max Sync Reached, Finish
+          setInitStep(3);
+          const timeout = setTimeout(() => {
             const newAgent: Agent = {
                 id: `agent-${Date.now()}`,
                 name,
@@ -38,16 +62,10 @@ export const CreateAgent: React.FC<CreateAgentProps> = ({ onCreated }) => {
                 tradingPrompt: ''
             };
             onCreated(newAgent);
-        }, 5000);
-
-        return () => {
-            clearTimeout(step1);
-            clearTimeout(step2);
-            clearTimeout(step3);
-            clearTimeout(step4);
-        };
-    }
-  }, [isInitializing, name, selectedAvatar, onCreated]);
+          }, 400); // Brief pause to see "Complete"
+          return () => clearTimeout(timeout);
+      }
+  }, [syncRatio, initStep, name, selectedAvatar, onCreated]);
 
   if (isInitializing) {
       return (
@@ -68,7 +86,7 @@ export const CreateAgent: React.FC<CreateAgentProps> = ({ onCreated }) => {
                       </div>
 
                        {/* Step 1: Uploading */}
-                      <div className={`flex items-center justify-between border-b border-gray-800 pb-2 transition-opacity duration-500 ${initStep >= 1 ? 'opacity-100' : 'opacity-30'}`}>
+                      <div className={`flex items-center justify-between border-b border-gray-800 pb-2 transition-opacity duration-200 ${initStep >= 1 ? 'opacity-100' : 'opacity-30'}`}>
                           <span className="text-xs text-eva-yellow uppercase tracking-widest flex items-center gap-2">
                               <Cpu className="w-4 h-4" /> UPLOADING LOGIC
                           </span>
@@ -78,12 +96,12 @@ export const CreateAgent: React.FC<CreateAgentProps> = ({ onCreated }) => {
                       </div>
 
                       {/* Step 2: Sync */}
-                      <div className={`flex items-center justify-between border-b border-gray-800 pb-2 transition-opacity duration-500 ${initStep >= 2 ? 'opacity-100' : 'opacity-30'}`}>
+                      <div className={`flex items-center justify-between border-b border-gray-800 pb-2 transition-opacity duration-200 ${initStep >= 2 ? 'opacity-100' : 'opacity-30'}`}>
                           <span className="text-xs text-eva-yellow uppercase tracking-widest flex items-center gap-2">
                               <Zap className="w-4 h-4" /> SYNC RATIO
                           </span>
-                          <span className="text-xs font-bold text-eva-red animate-pulse">
-                              {initStep >= 2 ? '400%' : 'CALCULATING...'}
+                          <span className={`text-xs font-bold ${syncRatio >= 100 ? 'text-eva-green' : 'text-eva-red animate-pulse'}`}>
+                              {initStep >= 2 ? `${syncRatio}%` : 'CALCULATING...'}
                           </span>
                       </div>
                   </div>
@@ -91,13 +109,13 @@ export const CreateAgent: React.FC<CreateAgentProps> = ({ onCreated }) => {
                   {/* Progress Bar */}
                   <div className="w-full h-8 border-2 border-eva-orange p-1 mt-8">
                       <div 
-                        className="h-full bg-eva-orange transition-all duration-[4000ms] ease-linear"
-                        style={{ width: initStep >= 3 ? '100%' : '10%' }}
+                        className="h-full bg-eva-orange transition-all ease-out"
+                        style={{ width: `${(syncRatio / 400) * 100}%`, transitionDuration: '50ms' }}
                       ></div>
                   </div>
                   
                   <div className="text-center text-[10px] text-gray-500 uppercase tracking-[0.5em] mt-2">
-                      MAGI-SYSTEM: CASPER-3 PROCESSING
+                      {syncRatio >= 400 ? 'SYNCHRONIZATION COMPLETE' : 'MAGI-SYSTEM: CASPER-3 PROCESSING'}
                   </div>
               </div>
           </div>

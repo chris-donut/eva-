@@ -150,7 +150,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-eva-dark bg-hex-pattern text-gray-100 font-mono selection:bg-eva-yellow selection:text-eva-dark">
+    <div className="min-h-screen bg-eva-light bg-hex-pattern text-eva-dark font-mono selection:bg-eva-brand selection:text-white">
       <Navbar 
         currentView={currentView}
         onNavigate={setCurrentView}

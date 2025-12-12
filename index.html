@@ -11,23 +11,26 @@
           extend: {
             colors: {
               eva: {
-                dark: '#120024', // Deep purple/black
-                darker: '#0a0014',
-                yellow: '#facc15', // Primary highlight
-                red: '#ef4444', // Alert/Emergency
+                dark: '#18181b', // Zinc 900 - Dark elements/Text
+                darker: '#09090b', // Zinc 950
+                light: '#f4f4f5', // Zinc 100 - Main Background
+                panel: '#ffffff', // White - Cards
+                brand: '#ef4444', // Red 500 - Primary Brand (replaces yellow usage conceptually)
+                yellow: '#ef4444', // ALIAS yellow to RED to quickly pivot existing classes
+                red: '#ef4444', // Keep red as red
                 green: '#10b981', // Success
                 orange: '#f97316',
-                purple: '#7c3aed',
-                gray: '#52525b',
+                gray: '#71717a', // Zinc 500 - Muted text
+                border: '#e4e4e7', // Zinc 200 - Borders
               }
             },
             fontFamily: {
               sans: ['Inter', 'sans-serif'],
-              serif: ['"Times New Roman"', 'Times', 'serif'], // Key for Eva titles
+              serif: ['"Times New Roman"', 'Times', 'serif'],
               mono: ['JetBrains Mono', 'monospace'],
             },
             backgroundImage: {
-              'hex-pattern': "url(\"data:image/svg+xml,%3Csvg width='24' height='40' viewBox='0 0 24 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 40c5.523 0 10-4.477 10-10V10c0-5.523-4.477-10-10-10s-10 4.477-10 10v20c0 5.523 4.477 10 10 10z' fill='%232e1065' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E\")",
+              'hex-pattern': "url(\"data:image/svg+xml,%3Csvg width='24' height='40' viewBox='0 0 24 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 40c5.523 0 10-4.477 10-10V10c0-5.523-4.477-10-10-10s-10 4.477-10 10v20c0 5.523 4.477 10 10 10z' fill='%2318181b' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E\")",
             }
           },
         },
@@ -35,9 +38,9 @@
     </script>
     <style>
       body {
-        background-color: #120024;
-        color: #f4f4f5;
-        font-family: 'JetBrains Mono', monospace; /* Default to mono for that terminal feel */
+        background-color: #f4f4f5; /* Zinc 100 */
+        color: #18181b; /* Zinc 900 */
+        font-family: 'JetBrains Mono', monospace;
       }
       /* Custom Scrollbar */
       ::-webkit-scrollbar {
@@ -45,19 +48,19 @@
         height: 6px;
       }
       ::-webkit-scrollbar-track {
-        background: #120024;
+        background: #f4f4f5;
       }
       ::-webkit-scrollbar-thumb {
-        background: #facc15;
+        background: #ef4444;
         border-radius: 0px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #eab308;
+        background: #dc2626;
       }
       
       /* Utilities */
       .eva-border {
-        border: 1px solid #52525b;
+        border: 1px solid #e4e4e7;
         position: relative;
       }
       .eva-border::after {
@@ -67,19 +70,16 @@
         right: -1px;
         width: 10px;
         height: 10px;
-        background: #facc15;
+        background: #ef4444;
         clip-path: polygon(100% 0, 0 100%, 100% 100%);
       }
 
       .text-glow {
-        text-shadow: 0 0 10px rgba(250, 204, 21, 0.3);
-      }
-      .text-glow-red {
-        text-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+        text-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
       }
       
       .scanline {
-        background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+        background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.02) 50%, rgba(0,0,0,0.02));
         background-size: 100% 4px;
         position: fixed;
         pointer-events: none;
@@ -88,7 +88,7 @@
         right: 0;
         bottom: 0;
         z-index: 9999;
-        opacity: 0.15;
+        opacity: 0.5;
       }
     </style>
   <script type="importmap">

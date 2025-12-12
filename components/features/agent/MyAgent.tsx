@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Agent, TradeLog } from '../../../types';
 import { Button } from '../../ui/Button';
-import { Play, Pause, Activity, Terminal, X, UploadCloud, Settings2 } from 'lucide-react';
+import { Play, Pause, Activity, Terminal, X, UploadCloud, Settings2, TrendingUp, TrendingDown, Wallet } from 'lucide-react';
 import { ReasoningModal } from './ReasoningModal';
 import { EditAgentModal } from './EditAgentModal';
+import { AreaChart, Area, ResponsiveContainer, YAxis } from 'recharts';
 
 interface MyAgentProps {
   agent: Agent;
@@ -16,12 +17,12 @@ interface MyAgentProps {
 const DepositModal = ({ onClose, onConfirm }: { onClose: () => void; onConfirm: (amount: number) => void }) => {
     const [amount, setAmount] = useState('');
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-            <div className="bg-eva-dark border-2 border-eva-green p-8 w-full max-w-md shadow-[0_0_30px_rgba(16,185,129,0.2)] relative">
-                <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-white">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div className="bg-white border-2 border-eva-brand p-8 w-full max-w-md shadow-xl relative">
+                <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-black">
                     <X className="w-5 h-5" />
                 </button>
-                <h3 className="text-2xl font-serif font-black text-eva-green mb-6 tracking-tighter scale-y-110">INJECT LCL (SOL)</h3>
+                <h3 className="text-2xl font-serif font-black text-eva-brand mb-6 tracking-tighter scale-y-110">INJECT LCL (SOL)</h3>
                 <div className="space-y-6">
                     <div>
                         <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Injection Volume</label>
@@ -29,20 +30,20 @@ const DepositModal = ({ onClose, onConfirm }: { onClose: () => void; onConfirm: 
                             type="number" 
                             value={amount}
                             onChange={(e) => setAmount(e.target.value)}
-                            className="w-full bg-black border-2 border-gray-700 p-4 text-white font-mono text-xl focus:border-eva-green outline-none transition-colors placeholder-gray-800"
+                            className="w-full bg-gray-50 border-2 border-gray-200 p-4 text-eva-dark font-mono text-xl focus:border-eva-brand outline-none transition-colors placeholder-gray-400"
                             placeholder="0.00"
                             autoFocus
                         />
                     </div>
                     <div className="flex gap-4">
-                        <Button variant="outline" onClick={onClose} className="flex-1 border-gray-600 text-gray-400 hover:text-white">CANCEL</Button>
+                        <Button variant="outline" onClick={onClose} className="flex-1">CANCEL</Button>
                         <Button 
                             variant="primary" 
                             onClick={() => {
                                 const val = parseFloat(amount);
                                 if (!isNaN(val) && val > 0) onConfirm(val);
                             }}
-                            className="flex-1 bg-eva-green border-eva-green text-black hover:bg-white hover:border-white shadow-[0_0_15px_rgba(16,185,129,0.4)]"
+                            className="flex-1"
                         >
                             CONFIRM
                         </Button>
@@ -53,10 +54,63 @@ const DepositModal = ({ onClose, onConfirm }: { onClose: () => void; onConfirm: 
     );
 };
 
+// Small Sparkline Component
+const Sparkline = ({ data, color, value, label, subLabel }: { data: any[], color: string, value: number, label: string, subLabel?: string }) => (
+    <div className="bg-white border border-gray-200 p-4 relative group hover:border-eva-brand transition-colors shadow-sm">
+        <div className="flex justify-between items-start mb-2 relative z-10">
+            <div>
+                <div className="text-[10px] text-gray-600 uppercase tracking-widest mb-1 font-bold">{label}</div>
+                {subLabel && <div className="text-[9px] text-gray-400 font-mono">{subLabel}</div>}
+            </div>
+            <div className={`font-mono font-bold text-lg ${value >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {value >= 0 ? '+' : ''}{value.toFixed(2)} <span className="text-[10px] text-gray-500">SOL</span>
+            </div>
+        </div>
+        <div className="h-16 w-full opacity-60 group-hover:opacity-100 transition-opacity">
+            <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={data}>
+                    <defs>
+                      <linearGradient id={`grad-${label.replace(/\s/g, '')}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={color} stopOpacity={0.2}/>
+                        <stop offset="95%" stopColor={color} stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <YAxis domain={['auto', 'auto']} hide />
+                    <Area 
+                        type="monotone" 
+                        dataKey="value" 
+                        stroke={color} 
+                        fill={`url(#grad-${label.replace(/\s/g, '')})`} 
+                        strokeWidth={2} 
+                        isAnimationActive={false}
+                    />
+                </AreaChart>
+            </ResponsiveContainer>
+        </div>
+    </div>
+);
+
 export const MyAgent: React.FC<MyAgentProps> = ({ agent, logs, onUpdateAgent, onAddLog, onDeploy }) => {
   const [selectedLog, setSelectedLog] = useState<TradeLog | null>(null);
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  
+  // Track history for sparklines
+  const [history, setHistory] = useState<{total: number[], round: number[]}>({
+      total: Array(20).fill(agent.totalPnl), 
+      round: Array(20).fill(agent.currentRoundPnl)
+  });
+
+  // Update history when agent props change
+  useEffect(() => {
+      setHistory(prev => ({
+          total: [...prev.total.slice(1), agent.totalPnl],
+          round: [...prev.round.slice(1), agent.currentRoundPnl]
+      }));
+  }, [agent.totalPnl, agent.currentRoundPnl]);
+
+  const totalPnlData = history.total.map((v, i) => ({ i, value: v }));
+  const roundPnlData = history.round.map((v, i) => ({ i, value: v }));
 
   // Derive status from props rather than local state to ensure synchronization
   const isPaused = agent.status === 'PAUSED';
@@ -95,33 +149,37 @@ export const MyAgent: React.FC<MyAgentProps> = ({ agent, logs, onUpdateAgent, on
   };
 
   return (
-    <div className="max-w-[1200px] mx-auto p-8 space-y-8">
+    <div className="max-w-[1400px] mx-auto p-8 space-y-8">
       
       {/* Header Card */}
-      <div className={`border-2 p-6 flex items-center justify-between relative overflow-hidden ${agent.isDeployed ? 'border-eva-yellow bg-black/50' : 'border-gray-600 bg-black/80'}`}>
-         <div className="absolute top-0 right-0 p-2 opacity-20 pointer-events-none">
-            <Activity className={`w-32 h-32 ${agent.isDeployed ? 'text-eva-yellow' : 'text-gray-600'}`} />
+      <div className={`border-2 p-6 flex items-center justify-between relative overflow-hidden transition-all ${
+          agent.isDeployed 
+          ? 'border-eva-brand bg-white shadow-md' 
+          : 'border-gray-300 bg-gray-50'
+      }`}>
+         <div className="absolute top-0 right-0 p-2 opacity-5 pointer-events-none">
+            <Activity className="w-32 h-32 text-black" />
          </div>
 
          <div className="flex items-center gap-8 relative z-10">
-            <div className={`w-24 h-24 border-2 border-white bg-black flex items-center justify-center relative ${!agent.isDeployed && 'grayscale'}`}>
+            <div className={`w-24 h-24 border-2 border-gray-200 bg-white flex items-center justify-center relative shadow-inner ${!agent.isDeployed && 'grayscale opacity-50'}`}>
                  {/* Crosshairs */}
                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-full h-px bg-eva-red/50"></div>
-                    <div className="h-full w-px bg-eva-red/50 absolute"></div>
+                    <div className="w-full h-px bg-eva-brand/20"></div>
+                    <div className="h-full w-px bg-eva-brand/20 absolute"></div>
                  </div>
-                 <div className={`w-12 h-12 rounded-full ${agent.isDeployed ? 'bg-eva-yellow animate-pulse' : 'bg-gray-600'}`}></div>
+                 <div className={`w-12 h-12 rounded-full ${agent.isDeployed ? 'bg-eva-brand animate-pulse' : 'bg-gray-300'}`}></div>
             </div>
             <div>
-                <div className="text-[10px] font-bold text-eva-orange tracking-[0.4em] mb-1">UNIT DESIGNATION</div>
-                <h2 className="text-4xl font-serif font-black text-white tracking-tighter scale-y-110 mb-2">{agent.name}</h2>
+                <div className="text-[10px] font-bold text-eva-brand tracking-[0.4em] mb-1">UNIT DESIGNATION</div>
+                <h2 className="text-4xl font-serif font-black text-eva-dark tracking-tighter scale-y-110 mb-2">{agent.name}</h2>
                 <div className="flex items-center gap-4">
                     <span className={`px-2 py-1 text-[10px] font-bold uppercase tracking-widest border ${
                         !agent.isDeployed 
-                        ? 'border-gray-500 text-gray-500'
+                        ? 'border-gray-300 text-gray-400'
                         : isPaused 
-                            ? 'border-eva-red text-eva-red' 
-                            : 'border-eva-green text-eva-green bg-eva-green/10'
+                            ? 'border-orange-500 text-orange-500 bg-orange-50' 
+                            : 'border-green-600 text-green-700 bg-green-50'
                     }`}>
                         { !agent.isDeployed ? 'STATUS: STANDBY' : isPaused ? 'STATUS: PAUSED' : 'STATUS: OPERATIONAL' }
                     </span>
@@ -135,7 +193,7 @@ export const MyAgent: React.FC<MyAgentProps> = ({ agent, logs, onUpdateAgent, on
                  <Button 
                     onClick={onDeploy}
                     variant="primary"
-                    className="w-40 animate-pulse"
+                    className="w-40"
                 >
                     <span className="flex items-center gap-2"><UploadCloud className="w-4 h-4" /> DEPLOY</span>
                 </Button>
@@ -151,7 +209,7 @@ export const MyAgent: React.FC<MyAgentProps> = ({ agent, logs, onUpdateAgent, on
             
             <button 
                 onClick={() => setShowEditModal(true)}
-                className="text-[10px] font-bold text-gray-500 uppercase tracking-widest hover:text-eva-yellow flex items-center gap-2"
+                className="text-[10px] font-bold text-gray-500 uppercase tracking-widest hover:text-eva-brand flex items-center gap-2 transition-colors"
             >
                 <Settings2 className="w-3 h-3" /> Configure Logic
             </button>
@@ -160,50 +218,81 @@ export const MyAgent: React.FC<MyAgentProps> = ({ agent, logs, onUpdateAgent, on
 
       {/* Grid Layout */}
       <div className="grid grid-cols-12 gap-8">
-        {/* Funds Card */}
-        <div className="col-span-4 border border-gray-700 bg-black/40 p-6 relative">
-            <div className="absolute -top-3 left-4 bg-eva-dark px-2 text-xs font-bold text-eva-yellow tracking-widest uppercase">Resources</div>
+        
+        {/* Left Column: Metrics & Resources */}
+        <div className="col-span-4 flex flex-col gap-6">
             
-            <div className="space-y-6 mt-2">
-                <div className="flex justify-between items-end border-b border-gray-800 pb-4">
-                    <span className="text-xs text-gray-500 uppercase tracking-widest">SOL Reserve</span>
-                    <span className="font-mono text-2xl text-white font-bold">{agent.balance.toFixed(4)}</span>
+            {/* Performance Card */}
+            <div className="border border-gray-200 bg-white p-6 relative shadow-sm">
+                 <div className="absolute -top-3 left-4 bg-white border border-gray-200 px-2 text-xs font-bold text-eva-brand tracking-widest uppercase flex items-center gap-2">
+                     <TrendingUp className="w-3 h-3" /> Performance
+                 </div>
+                 
+                 <div className="space-y-4 mt-2">
+                    <Sparkline 
+                        label="Cumulative PnL" 
+                        subLabel="LIFETIME PERFORMANCE"
+                        value={agent.totalPnl} 
+                        data={totalPnlData} 
+                        color={agent.totalPnl >= 0 ? '#10b981' : '#ef4444'} 
+                    />
+                    <Sparkline 
+                        label="Round Delta" 
+                        subLabel="CURRENT SESSION"
+                        value={agent.currentRoundPnl} 
+                        data={roundPnlData} 
+                        color={agent.currentRoundPnl >= 0 ? '#10b981' : '#ef4444'} 
+                    />
+                 </div>
+            </div>
+
+            {/* Resources Card */}
+            <div className="border border-gray-200 bg-white p-6 relative flex-1 shadow-sm">
+                <div className="absolute -top-3 left-4 bg-white border border-gray-200 px-2 text-xs font-bold text-eva-brand tracking-widest uppercase flex items-center gap-2">
+                    <Wallet className="w-3 h-3" /> Resources
                 </div>
                 
-                <div className="space-y-2 font-mono text-xs text-gray-400">
-                    <div className="flex justify-between">
-                        <span>INJECTED:</span>
-                        <span>400.00 SOL</span>
+                <div className="space-y-6 mt-2">
+                    <div className="flex justify-between items-end border-b border-gray-100 pb-4">
+                        <span className="text-xs text-gray-500 uppercase tracking-widest font-bold">SOL Reserve</span>
+                        <span className="font-mono text-2xl text-eva-dark font-bold">{agent.balance.toFixed(4)}</span>
                     </div>
-                    <div className="flex justify-between">
-                        <span>EJECTED:</span>
-                        <span>12.50 SOL</span>
+                    
+                    <div className="space-y-2 font-mono text-xs text-gray-600">
+                        <div className="flex justify-between">
+                            <span>INJECTED:</span>
+                            <span>400.00 SOL</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span>EJECTED:</span>
+                            <span>12.50 SOL</span>
+                        </div>
+                        <div className="flex justify-between pt-2 text-green-700 font-bold border-t border-dashed border-gray-200 mt-2">
+                            <span>NET GAIN:</span>
+                            <span>+{(agent.totalPnl).toFixed(2)} SOL</span>
+                        </div>
                     </div>
-                    <div className="flex justify-between pt-2 text-eva-green font-bold">
-                        <span>NET GAIN:</span>
-                        <span>+22.21 SOL</span>
-                    </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-4 pt-4">
-                    <Button variant="outline" size="sm" onClick={() => setShowDepositModal(true)}>INJECT</Button>
-                    <Button variant="outline" size="sm">EJECT</Button>
+                    <div className="grid grid-cols-2 gap-4 pt-4 mt-auto">
+                        <Button variant="outline" size="sm" onClick={() => setShowDepositModal(true)}>INJECT</Button>
+                        <Button variant="outline" size="sm">EJECT</Button>
+                    </div>
                 </div>
             </div>
         </div>
 
-        {/* History / Logs */}
-        <div className="col-span-8 border border-gray-700 bg-black/40 p-6 relative flex flex-col">
-           <div className="absolute -top-3 left-4 bg-eva-dark px-2 text-xs font-bold text-eva-yellow tracking-widest uppercase">Operation Logs</div>
+        {/* Right Column: History / Logs */}
+        <div className="col-span-8 border border-gray-200 bg-white p-6 relative flex flex-col min-h-[500px] shadow-sm">
+           <div className="absolute -top-3 left-4 bg-white border border-gray-200 px-2 text-xs font-bold text-eva-brand tracking-widest uppercase">Operation Logs</div>
            
-           <div className="flex justify-between items-center mb-6 pb-2 border-b border-gray-800">
-                <div className="text-xs font-mono text-gray-400">ROUND: EVA-84000</div>
-                <div className="text-xs font-mono text-eva-green">SYNC RATE: {agent.isDeployed ? '98.2%' : '0.0%'}</div>
+           <div className="flex justify-between items-center mb-6 pb-2 border-b border-gray-200">
+                <div className="text-xs font-mono text-gray-500 font-bold">ROUND: EVA-84000</div>
+                <div className="text-xs font-mono text-green-600 font-bold">SYNC RATE: {agent.isDeployed ? '98.2%' : '0.0%'}</div>
            </div>
 
            <div className="flex-1 overflow-x-auto">
                 <table className="w-full text-xs text-left font-mono">
-                    <thead className="text-gray-600 uppercase tracking-widest border-b-2 border-gray-800">
+                    <thead className="text-gray-500 uppercase tracking-widest border-b-2 border-gray-100">
                         <tr>
                             <th className="pb-3 pl-2">Time</th>
                             <th className="pb-3">Op</th>
@@ -214,15 +303,15 @@ export const MyAgent: React.FC<MyAgentProps> = ({ agent, logs, onUpdateAgent, on
                     </thead>
                     <tbody>
                         {logs.map((log) => (
-                            <tr key={log.id} className="border-b border-gray-800 hover:bg-white/5 transition-colors group">
-                                <td className="py-3 pl-2 text-gray-500">{log.time.split(' ')[1]}</td>
-                                <td className={`py-3 font-bold ${log.type === 'BUY' || log.type === 'DEPOSIT' ? 'text-eva-green' : 'text-eva-red'}`}>{log.type}</td>
-                                <td className="py-3 text-right text-white">{log.amount.toFixed(2)}</td>
-                                <td className="py-3 text-right text-gray-400">{log.price ? log.price : '-'}</td>
+                            <tr key={log.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors group">
+                                <td className="py-3 pl-2 text-gray-600">{log.time.split(' ')[1]}</td>
+                                <td className={`py-3 font-bold ${log.type === 'BUY' || log.type === 'DEPOSIT' ? 'text-green-600' : 'text-red-600'}`}>{log.type}</td>
+                                <td className="py-3 text-right text-eva-dark font-bold">{log.amount.toFixed(2)}</td>
+                                <td className="py-3 text-right text-gray-500">{log.price ? log.price : '-'}</td>
                                 <td className="py-3 text-center">
                                     <button 
                                         onClick={() => setSelectedLog(log)}
-                                        className="text-gray-500 hover:text-eva-yellow transition-colors"
+                                        className="text-gray-400 hover:text-eva-brand transition-colors"
                                     >
                                         <Terminal className="w-4 h-4 mx-auto" />
                                     </button>
