@@ -1,6 +1,6 @@
 import React from 'react';
-import { RankingItem, TradeLog } from './types';
-import { Bot, Zap, Flame, Brain, Gem } from 'lucide-react';
+import { RankingItem, TradeLog, Agent } from './types';
+import { Bot, Zap, Flame, Brain, Gem, Ghost } from 'lucide-react';
 
 export const AVATARS = [
   { id: 'robot', icon: <Bot className="w-6 h-6" /> },
@@ -9,6 +9,80 @@ export const AVATARS = [
   { id: 'fire', icon: <Flame className="w-6 h-6 text-orange-500" /> },
   { id: 'brain', icon: <Brain className="w-6 h-6 text-pink-500" /> },
   { id: 'gem', icon: <Gem className="w-6 h-6 text-blue-500" /> },
+  { id: 'ghost', icon: <Ghost className="w-6 h-6 text-purple-500" /> },
+];
+
+export const INITIAL_COMPETITORS: Agent[] = [
+  {
+    id: 'bot-1',
+    name: 'UNIT-00-PROTO',
+    avatar: 'robot',
+    balance: 500,
+    status: 'ACTIVE',
+    isDeployed: true,
+    totalPnl: 124.5,
+    currentRoundPnl: 12.4,
+    bettingPrompt: 'Conservative accumulation.',
+    tradingPrompt: 'High frequency scalping.',
+    tokenBalance: 45000,
+    lastAction: 'BUY 200 @ 0.002'
+  },
+  {
+    id: 'bot-2',
+    name: 'UNIT-02-ASUKA',
+    avatar: 'fire',
+    balance: 320,
+    status: 'ACTIVE',
+    isDeployed: true,
+    totalPnl: -45.2,
+    currentRoundPnl: 8.2,
+    bettingPrompt: 'Aggressive leverage.',
+    tradingPrompt: 'Momentum breakout.',
+    tokenBalance: 62000,
+    lastAction: 'HOLD'
+  },
+  {
+    id: 'bot-3',
+    name: 'JET-ALONE',
+    avatar: 'target',
+    balance: 800,
+    status: 'ACTIVE',
+    isDeployed: true,
+    totalPnl: 45.1,
+    currentRoundPnl: -2.1,
+    bettingPrompt: 'Market making.',
+    tradingPrompt: 'Mean reversion.',
+    tokenBalance: 21000,
+    lastAction: 'SELL 500 @ 0.0021'
+  },
+  {
+    id: 'bot-4',
+    name: 'MAGI-CASPER',
+    avatar: 'brain',
+    balance: 1200,
+    status: 'ACTIVE',
+    isDeployed: true,
+    totalPnl: 220.4,
+    currentRoundPnl: 45.2,
+    bettingPrompt: 'Neural predictive.',
+    tradingPrompt: 'Sentiment analysis.',
+    tokenBalance: 88000,
+    lastAction: 'BUY 1000 @ 0.002'
+  },
+   {
+    id: 'bot-5',
+    name: 'SEELE-01',
+    avatar: 'ghost',
+    balance: 5000,
+    status: 'ACTIVE',
+    isDeployed: true,
+    totalPnl: 1200.0,
+    currentRoundPnl: 0.5,
+    bettingPrompt: 'Whale manipulation.',
+    tradingPrompt: 'Supply shock.',
+    tokenBalance: 150000,
+    lastAction: 'WAIT'
+  }
 ];
 
 export const MOCK_RANKINGS: RankingItem[] = [

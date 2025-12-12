@@ -21,6 +21,7 @@ export const CreateAgent: React.FC<CreateAgentProps> = ({ onCreated }) => {
       avatar: selectedAvatar,
       balance: 231,
       status: 'ACTIVE',
+      isDeployed: false,
       totalPnl: 0,
       currentRoundPnl: 0,
       bettingPrompt: '',

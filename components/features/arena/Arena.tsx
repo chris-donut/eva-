@@ -3,14 +3,15 @@ import { PhaseBar } from './PhaseBar';
 import { RankingList } from './RankingList';
 import { LiveChart } from './LiveChart';
 import { GamePhase, Agent } from '../../../types';
-import { Bot, Play, Square, ExternalLink, Activity } from 'lucide-react';
+import { Activity } from 'lucide-react';
 import { Button } from '../../ui/Button';
 
 interface ArenaProps {
   agent?: Agent;
+  competitors: Agent[];
 }
 
-export const Arena: React.FC<ArenaProps> = ({ agent }) => {
+export const Arena: React.FC<ArenaProps> = ({ agent, competitors }) => {
   const [phase, setPhase] = useState<GamePhase>('BETTING');
 
   const nextPhase = () => {
@@ -116,21 +117,23 @@ export const Arena: React.FC<ArenaProps> = ({ agent }) => {
         <div className="col-span-4 flex flex-col gap-8 h-full">
            <div className="flex-1 min-h-0 border-2 border-gray-700 bg-black/40 relative">
              <div className="absolute -top-3 left-4 bg-eva-dark px-2 text-xs font-bold text-eva-yellow tracking-widest uppercase">Live Rankings</div>
-             <RankingList userAgent={agent} />
+             <RankingList competitors={competitors} />
            </div>
 
            {/* User Unit Status */}
            {agent && (
-             <div className="border-2 border-eva-green bg-eva-green/5 p-6 shrink-0 relative">
-                <div className="absolute top-0 right-0 bg-eva-green text-black text-[10px] font-bold px-2 py-1 uppercase">Own Unit</div>
+             <div className={`border-2 p-6 shrink-0 relative transition-all ${agent.isDeployed ? 'border-eva-green bg-eva-green/5' : 'border-gray-600 bg-black/50 grayscale'}`}>
+                <div className={`absolute top-0 right-0 text-[10px] font-bold px-2 py-1 uppercase ${agent.isDeployed ? 'bg-eva-green text-black' : 'bg-gray-600 text-gray-300'}`}>
+                    {agent.isDeployed ? 'ACTIVE UNIT' : 'STANDBY'}
+                </div>
                 
                 <div className="flex justify-between items-center mb-6">
                     <div className="flex items-center gap-3">
-                        <div className="w-3 h-3 bg-eva-green rounded-full animate-pulse shadow-[0_0_10px_#10b981]"></div>
+                        <div className={`w-3 h-3 rounded-full shadow-[0_0_10px_currentColor] ${agent.isDeployed ? 'bg-eva-green animate-pulse' : 'bg-gray-500'}`}></div>
                         <span className="font-bold text-xl text-white tracking-widest">{agent.name}</span>
                     </div>
-                    <span className="text-xs font-mono text-eva-green border border-eva-green px-2 py-0.5 uppercase">
-                        SYNC: 100%
+                    <span className={`text-xs font-mono border px-2 py-0.5 uppercase ${agent.isDeployed ? 'text-eva-green border-eva-green' : 'text-gray-500 border-gray-600'}`}>
+                        SYNC: {agent.isDeployed ? '100%' : 'OFFLINE'}
                     </span>
                 </div>
 
@@ -141,11 +144,11 @@ export const Arena: React.FC<ArenaProps> = ({ agent }) => {
                     </div>
                     <div className="text-right">
                         <div className="text-[10px] text-gray-400 uppercase tracking-widest mb-1">SOL Reserve</div>
-                        <div className="font-mono text-xl text-white">{agent.balance}</div>
+                        <div className="font-mono text-xl text-white">{agent.balance.toFixed(1)}</div>
                     </div>
                 </div>
 
-                <Button variant="outline" className="w-full border-eva-green text-eva-green hover:bg-eva-green hover:text-black h-10 text-xs">
+                <Button variant="outline" className={`w-full h-10 text-xs ${agent.isDeployed ? 'border-eva-green text-eva-green hover:bg-eva-green hover:text-black' : 'border-gray-600 text-gray-500'}`}>
                     MANUAL OVERRIDE
                 </Button>
              </div>
@@ -160,14 +163,14 @@ export const Arena: React.FC<ArenaProps> = ({ agent }) => {
             System Events
         </h3>
         <div className="grid grid-cols-3 gap-4">
-            {[1, 2, 3].map((i) => (
-                <div key={i} className="bg-black/40 border border-gray-800 p-2 flex justify-between items-center font-mono text-xs hover:border-eva-yellow transition-colors group">
+            {competitors.slice(0, 3).map((comp, i) => (
+                <div key={comp.id} className="bg-black/40 border border-gray-800 p-2 flex justify-between items-center font-mono text-xs hover:border-eva-yellow transition-colors group">
                     <div className="flex items-center gap-2">
-                        <span className={`w-1 h-3 ${i === 2 ? 'bg-eva-red' : 'bg-eva-green'}`}></span>
-                        <span className="text-gray-300 group-hover:text-white">UNIT-{10+i}</span>
+                        <span className={`w-1 h-3 ${comp.currentRoundPnl < 0 ? 'bg-eva-red' : 'bg-eva-green'}`}></span>
+                        <span className="text-gray-300 group-hover:text-white truncate max-w-[100px]">{comp.name}</span>
                     </div>
-                    <span className={i === 2 ? 'text-eva-red' : 'text-eva-green'}>
-                        {i === 2 ? '-0.4 SOL' : '+0.4 SOL'}
+                    <span className={comp.currentRoundPnl < 0 ? 'text-eva-red' : 'text-eva-green'}>
+                        {comp.currentRoundPnl < 0 ? '' : '+'}{comp.currentRoundPnl.toFixed(2)} SOL
                     </span>
                 </div>
             ))}

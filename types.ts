@@ -7,11 +7,14 @@ export interface Agent {
   name: string;
   avatar: string; // ID of the avatar icon
   balance: number; // In SOL
-  status: 'ACTIVE' | 'PAUSED';
+  status: 'ACTIVE' | 'PAUSED' | 'STANDBY';
+  isDeployed: boolean;
   totalPnl: number;
   currentRoundPnl: number;
-  bettingPrompt?: string;
-  tradingPrompt?: string;
+  bettingPrompt: string;
+  tradingPrompt: string;
+  lastAction?: string;
+  tokenBalance?: number; // For ranking
 }
 
 export interface TradeLog {
