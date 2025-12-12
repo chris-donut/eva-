@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Plus, Triangle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Triangle, Cpu, Zap, Activity } from 'lucide-react';
 import { Button } from '../../ui/Button';
 import { AVATARS } from '../../../constants';
 import { Agent } from '../../../types';
@@ -11,24 +11,98 @@ interface CreateAgentProps {
 export const CreateAgent: React.FC<CreateAgentProps> = ({ onCreated }) => {
   const [name, setName] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState(AVATARS[0].id);
+  const [isInitializing, setIsInitializing] = useState(false);
+  const [initStep, setInitStep] = useState(0);
 
   const handleSubmit = () => {
     if (!name) return;
-    
-    const newAgent: Agent = {
-      id: `agent-${Date.now()}`,
-      name,
-      avatar: selectedAvatar,
-      balance: 231,
-      status: 'ACTIVE',
-      isDeployed: false,
-      totalPnl: 0,
-      currentRoundPnl: 0,
-      bettingPrompt: '',
-      tradingPrompt: ''
-    };
-    onCreated(newAgent);
+    setIsInitializing(true);
   };
+
+  useEffect(() => {
+    if (isInitializing) {
+        const step1 = setTimeout(() => setInitStep(1), 1000); // Neural Link
+        const step2 = setTimeout(() => setInitStep(2), 2500); // Synch Ratio
+        const step3 = setTimeout(() => setInitStep(3), 4000); // Complete
+        const step4 = setTimeout(() => {
+            const newAgent: Agent = {
+                id: `agent-${Date.now()}`,
+                name,
+                avatar: selectedAvatar,
+                balance: 231,
+                status: 'ACTIVE',
+                isDeployed: false,
+                totalPnl: 0,
+                currentRoundPnl: 0,
+                bettingPrompt: '',
+                tradingPrompt: ''
+            };
+            onCreated(newAgent);
+        }, 5000);
+
+        return () => {
+            clearTimeout(step1);
+            clearTimeout(step2);
+            clearTimeout(step3);
+            clearTimeout(step4);
+        };
+    }
+  }, [isInitializing, name, selectedAvatar, onCreated]);
+
+  if (isInitializing) {
+      return (
+          <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center font-mono p-8">
+              <div className="w-full max-w-lg space-y-8">
+                  <div className="text-center">
+                    <h2 className="text-4xl font-serif font-black text-eva-orange mb-2 animate-pulse tracking-tighter scale-y-125">INITIALIZATION SEQUENCE</h2>
+                    <div className="h-px w-full bg-eva-orange mb-4"></div>
+                  </div>
+
+                  <div className="space-y-4">
+                      {/* Step 0: Connecting */}
+                      <div className="flex items-center justify-between border-b border-gray-800 pb-2">
+                          <span className="text-xs text-eva-yellow uppercase tracking-widest flex items-center gap-2">
+                              <Activity className="w-4 h-4" /> NEURAL LINKAGE
+                          </span>
+                          <span className="text-xs font-bold text-eva-green">ESTABLISHED</span>
+                      </div>
+
+                       {/* Step 1: Uploading */}
+                      <div className={`flex items-center justify-between border-b border-gray-800 pb-2 transition-opacity duration-500 ${initStep >= 1 ? 'opacity-100' : 'opacity-30'}`}>
+                          <span className="text-xs text-eva-yellow uppercase tracking-widest flex items-center gap-2">
+                              <Cpu className="w-4 h-4" /> UPLOADING LOGIC
+                          </span>
+                          <span className="text-xs font-bold text-white">
+                              {initStep >= 1 ? 'COMPLETE' : 'PENDING...'}
+                          </span>
+                      </div>
+
+                      {/* Step 2: Sync */}
+                      <div className={`flex items-center justify-between border-b border-gray-800 pb-2 transition-opacity duration-500 ${initStep >= 2 ? 'opacity-100' : 'opacity-30'}`}>
+                          <span className="text-xs text-eva-yellow uppercase tracking-widest flex items-center gap-2">
+                              <Zap className="w-4 h-4" /> SYNC RATIO
+                          </span>
+                          <span className="text-xs font-bold text-eva-red animate-pulse">
+                              {initStep >= 2 ? '400%' : 'CALCULATING...'}
+                          </span>
+                      </div>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="w-full h-8 border-2 border-eva-orange p-1 mt-8">
+                      <div 
+                        className="h-full bg-eva-orange transition-all duration-[4000ms] ease-linear"
+                        style={{ width: initStep >= 3 ? '100%' : '10%' }}
+                      ></div>
+                  </div>
+                  
+                  <div className="text-center text-[10px] text-gray-500 uppercase tracking-[0.5em] mt-2">
+                      MAGI-SYSTEM: CASPER-3 PROCESSING
+                  </div>
+              </div>
+          </div>
+      );
+  }
 
   return (
     <div className="max-w-4xl mx-auto py-12 px-6">
@@ -101,8 +175,12 @@ export const CreateAgent: React.FC<CreateAgentProps> = ({ onCreated }) => {
                 </p>
             </div>
 
-            <Button onClick={handleSubmit} className="w-full mt-4" variant="primary">
-            INITIALIZE UNIT
+            <Button onClick={handleSubmit} className="w-full mt-4 h-16 text-lg relative group overflow-hidden" variant="primary">
+               <span className="relative z-10">INITIALIZE UNIT</span>
+               <div className="absolute inset-0 bg-white transform translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-0"></div>
+               <span className="absolute inset-0 z-20 flex items-center justify-center text-black opacity-0 group-hover:opacity-100 transition-opacity duration-300 font-bold tracking-widest">
+                   LAUNCH
+               </span>
             </Button>
         </div>
       </div>

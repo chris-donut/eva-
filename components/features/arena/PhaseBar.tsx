@@ -4,9 +4,10 @@ import { Clock } from 'lucide-react';
 
 interface PhaseBarProps {
   phase: GamePhase;
+  timeLeft: number;
 }
 
-export const PhaseBar: React.FC<PhaseBarProps> = ({ phase }) => {
+export const PhaseBar: React.FC<PhaseBarProps> = ({ phase, timeLeft }) => {
   const getPhaseIndex = () => {
     switch (phase) {
       case 'BETTING': return 0;
@@ -20,14 +21,25 @@ export const PhaseBar: React.FC<PhaseBarProps> = ({ phase }) => {
   const phases = ['PRE-MARKET', 'ACTIVE', 'CRITICAL', 'ZERO'];
   const activeIdx = getPhaseIndex();
 
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `+00:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
   return (
     <div className="w-full mb-8 relative z-20">
         <div className="flex items-end justify-between mb-2">
              <div className="flex gap-4 items-center">
-                 <div className="text-eva-yellow font-bold text-xs uppercase tracking-[0.2em] bg-eva-yellow/10 px-2 py-1 border border-eva-yellow">
+                 <div className={`font-bold text-xs uppercase tracking-[0.2em] px-2 py-1 border transition-colors ${
+                     phase === 'LIQUIDATION' ? 'text-eva-red border-eva-red bg-eva-red/10 animate-pulse' : 'text-eva-yellow border-eva-yellow bg-eva-yellow/10'
+                 }`}>
                     Pattern: {phase === 'BETTING' ? 'BLUE' : 'ORANGE'}
                  </div>
-                 <div className="text-gray-500 font-mono text-[10px]">INTERNAL CLOCK: +00:12:33</div>
+                 <div className="text-gray-500 font-mono text-[10px] flex items-center gap-2">
+                    <Clock className="w-3 h-3" />
+                    INTERNAL CLOCK: <span className="text-white font-bold">{formatTime(timeLeft)}</span>
+                 </div>
              </div>
              <div className="text-right">
                 <div className="text-[10px] text-gray-500 uppercase tracking-widest">Prize Pool</div>

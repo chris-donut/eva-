@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { PhaseBar } from './PhaseBar';
 import { RankingList } from './RankingList';
 import { LiveChart } from './LiveChart';
@@ -9,17 +9,11 @@ import { Button } from '../../ui/Button';
 interface ArenaProps {
   agent?: Agent;
   competitors: Agent[];
+  phase: GamePhase;
+  timeLeft: number;
 }
 
-export const Arena: React.FC<ArenaProps> = ({ agent, competitors }) => {
-  const [phase, setPhase] = useState<GamePhase>('BETTING');
-
-  const nextPhase = () => {
-    const phases: GamePhase[] = ['BETTING', 'TRADING', 'LIQUIDATION', 'SETTLEMENT'];
-    const idx = phases.indexOf(phase);
-    setPhase(phases[(idx + 1) % phases.length]);
-  };
-
+export const Arena: React.FC<ArenaProps> = ({ agent, competitors, phase, timeLeft }) => {
   return (
     <div className="max-w-[1600px] mx-auto p-8 relative">
        {/* Background Grid Lines */}
@@ -36,13 +30,11 @@ export const Arena: React.FC<ArenaProps> = ({ agent, competitors }) => {
             <h2 className="text-4xl font-serif font-black text-white tracking-tighter scale-y-125">EVA-885000</h2>
         </div>
         <div className="flex gap-4">
-            <button onClick={nextPhase} className="text-[10px] bg-eva-gray/20 text-gray-400 border border-gray-600 px-2 py-1 hover:text-white uppercase tracking-widest">
-            Simulate: Next Phase ({phase})
-            </button>
+             {/* Sim Controls or Info could go here */}
         </div>
       </div>
 
-      <PhaseBar phase={phase} />
+      <PhaseBar phase={phase} timeLeft={timeLeft} />
 
       <div className="grid grid-cols-12 gap-8 h-[600px] mb-8 relative z-10">
         {/* Main Content Area */}

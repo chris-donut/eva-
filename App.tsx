@@ -4,8 +4,16 @@ import { ConnectWallet } from './components/features/wallet/ConnectWallet';
 import { CreateAgent } from './components/features/agent/CreateAgent';
 import { Arena } from './components/features/arena/Arena';
 import { MyAgent } from './components/features/agent/MyAgent';
-import { AppState, Agent, TradeLog } from './types';
+import { AppState, Agent, TradeLog, GamePhase } from './types';
 import { MOCK_LOGS, INITIAL_COMPETITORS } from './constants';
+
+// Phase durations in seconds
+const PHASE_DURATION = {
+  BETTING: 30,
+  TRADING: 45,
+  LIQUIDATION: 15,
+  SETTLEMENT: 10
+};
 
 function App() {
   const [currentView, setCurrentView] = useState<AppState>('LANDING');
@@ -13,43 +21,73 @@ function App() {
   const [agent, setAgent] = useState<Agent | undefined>(undefined);
   const [logs, setLogs] = useState<TradeLog[]>(MOCK_LOGS);
   
-  // Active Competitors State (Bots + potentially user agent)
+  // Game Loop State
+  const [phase, setPhase] = useState<GamePhase>('BETTING');
+  const [timeLeft, setTimeLeft] = useState(PHASE_DURATION.BETTING);
   const [competitors, setCompetitors] = useState<Agent[]>(INITIAL_COMPETITORS);
 
-  // Simulation Effect
+  // Simulation & Game Loop Effect
   useEffect(() => {
-    const interval = setInterval(() => {
-      // 1. Simulate Competitor PnL Fluctuations
-      setCompetitors(prev => prev.map(comp => {
-        // Random fluctuation between -0.5 and 0.5 SOL per tick
-        const change = (Math.random() - 0.48) * 0.5;
-        const newRoundPnl = comp.currentRoundPnl + change;
-        const newTotalPnl = comp.totalPnl + change;
-        
-        return {
-          ...comp,
-          currentRoundPnl: newRoundPnl,
-          totalPnl: newTotalPnl
-        };
-      }));
+    const timer = setInterval(() => {
+      // 1. Handle Timer & Phase Transitions
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          // Transition Logic
+          switch (phase) {
+            case 'BETTING':
+              setPhase('TRADING');
+              return PHASE_DURATION.TRADING;
+            case 'TRADING':
+              setPhase('LIQUIDATION');
+              return PHASE_DURATION.LIQUIDATION;
+            case 'LIQUIDATION':
+              setPhase('SETTLEMENT');
+              return PHASE_DURATION.SETTLEMENT;
+            case 'SETTLEMENT':
+              setPhase('BETTING');
+              // Optional: Reset PnL for next round or keep cumulative? 
+              // For prototype, let's keep cumulative but maybe reset round PnL visually later
+              return PHASE_DURATION.BETTING;
+            default:
+              return 30;
+          }
+        }
+        return prev - 1;
+      });
 
-      // 2. Simulate User Agent PnL if Deployed
-      if (agent && agent.isDeployed && agent.status === 'ACTIVE') {
-         const userChange = (Math.random() - 0.45) * 0.6; // Slight advantage for user ;)
-         setAgent(prev => {
-             if(!prev) return undefined;
-             return {
-                 ...prev,
-                 currentRoundPnl: prev.currentRoundPnl + userChange,
-                 totalPnl: prev.totalPnl + userChange
-             };
-         });
+      // 2. Simulate PnL Fluctuations (Only during Active Market Phases)
+      if (phase === 'TRADING' || phase === 'LIQUIDATION') {
+        setCompetitors(prev => prev.map(comp => {
+          // Volatility increases in Liquidation phase
+          const volatility = phase === 'LIQUIDATION' ? 1.2 : 0.5;
+          const change = (Math.random() - 0.48) * volatility;
+          
+          return {
+            ...comp,
+            currentRoundPnl: comp.currentRoundPnl + change,
+            totalPnl: comp.totalPnl + change
+          };
+        }));
+
+        // Simulate User Agent PnL if Deployed
+        if (agent && agent.isDeployed && agent.status === 'ACTIVE') {
+           const volatility = phase === 'LIQUIDATION' ? 1.5 : 0.6;
+           const userChange = (Math.random() - 0.45) * volatility;
+           setAgent(prev => {
+               if(!prev) return undefined;
+               return {
+                   ...prev,
+                   currentRoundPnl: prev.currentRoundPnl + userChange,
+                   totalPnl: prev.totalPnl + userChange
+               };
+           });
+        }
       }
 
-    }, 2000); // 2 second tick
+    }, 1000); // 1 second tick
 
-    return () => clearInterval(interval);
-  }, [agent?.isDeployed, agent?.status]); // Re-run if deployment status changes
+    return () => clearInterval(timer);
+  }, [phase, agent?.isDeployed, agent?.status]);
 
   const handleConnect = () => {
     setTimeout(() => {
@@ -59,8 +97,9 @@ function App() {
   };
 
   const handleCreateAgent = (newAgent: Agent) => {
-    setAgent({ ...newAgent, isDeployed: false, status: 'STANDBY' }); // Ensure initial state is standby
-    setCurrentView('ARENA');
+    setAgent({ ...newAgent, isDeployed: false, status: 'STANDBY' }); 
+    // Navigate directly to Unit Status to allow user to Deploy
+    setCurrentView('MY_AGENT');
   };
 
   const handleUpdateAgent = (updatedAgent: Agent) => {
@@ -71,11 +110,6 @@ function App() {
       if (!agent) return;
       const deployedAgent = { ...agent, isDeployed: true, status: 'ACTIVE' as const };
       setAgent(deployedAgent);
-      // We don't necessarily need to add to `competitors` array if we merge them in Arena, 
-      // but let's keep them separate to distinguish "Bots" vs "User" in logic for now, 
-      // and merge in the view.
-      // Removed automatic navigation to ARENA so user sees status update on My Agent screen
-      // setCurrentView('ARENA'); 
   };
 
   const handleAddLog = (log: TradeLog) => {
@@ -94,7 +128,12 @@ function App() {
       case 'CREATE_AGENT':
         return <CreateAgent onCreated={handleCreateAgent} />;
       case 'ARENA':
-        return <Arena agent={agent} competitors={arenaCompetitors} />;
+        return <Arena 
+          agent={agent} 
+          competitors={arenaCompetitors} 
+          phase={phase}
+          timeLeft={timeLeft}
+        />;
       case 'MY_AGENT':
         return agent ? (
           <MyAgent 
